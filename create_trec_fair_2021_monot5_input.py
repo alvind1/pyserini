@@ -22,8 +22,8 @@ def load_queries(path):
         for line in tqdm(fqueries):
             line = line.rstrip().split('\t')
             query_id = int(line[0])
-            query = ''.join(line[1:])
-            queries[query_id] = query
+            query, keywords = line[1].split(maxsplit=1)
+            queries[query_id] = (query, keywords)
     return queries
 
 
@@ -75,7 +75,7 @@ if __name__ == '__main__':
     with open(args.output_t5_texts, 'w') as fout_t5_texts,  \
             open(args.output_t5_ids, 'w') as fout_t5_ids:
         for (query_id, doc_ids) in tqdm(run.items()):
-            query = queries[query_id]
+            query, keywords = queries[query_id]
             for doc_id in doc_ids:
                 if doc_id not in corpus:
                     #print(f'Doc id not found: {doc_id}')
@@ -84,7 +84,7 @@ if __name__ == '__main__':
                 contents = corpus[doc_id]
                 n_docs += 1
                 passage_text = contents['contents']
-                doc_title = contents['title']
+                doc_title = contents['raw']['title']
 
                 # Remove any duplicated spaces or line breaks.
                 passage_text = ' '.join(passage_text.split())
@@ -112,8 +112,12 @@ if __name__ == '__main__':
 
                     fout_t5_ids.write(f'{query_id}\t{doc_id}\t{i}\n')
 
-                    fout_t5_texts.write(
-                        f'Query: {query} Document: {segment} Relevant:\n')
+                    if keywords == "":
+                        fout_t5_texts.write(
+                            f'Query: {query} Document: {segment} Relevant:\n')
+                    else:
+                        fout_t5_texts.write(
+                            f'Query: {query} Keywords: {keywords} Document: {segment} Relevant:\n')
                     n_segments += 1
                     if i + args.max_length >= len(sentences):
                         break
